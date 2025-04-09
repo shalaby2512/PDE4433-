@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sorting Results</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 92%;
+      margin: 2rem auto;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+    }
+
+    .robot-assistant {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      animation: float 3s ease-in-out infinite;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .robot-body {
+      background: #e0f7fa;
+      border: 2px solid #26c6da;
+      border-radius: 50% 50% 40% 40%;
+      width: 80px;
+      height: 100px;
+      position: relative;
+      box-shadow: 0 0 10px rgba(38, 198, 218, 0.5);
+      transition: box-shadow 0.3s, transform 0.3s;
+    }
+
+    .robot-body:hover {
+      box-shadow: 0 0 20px 5px #00e5ff, 0 0 10px #81d4fa inset;
+      transform: scale(1.05);
+    }
+
+    .robot-eyes {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    .eye {
+      width: 12px;
+      height: 12px;
+      background: #004d40;
+      border-radius: 50%;
+      animation: blink 4s infinite;
+    }
+
+    .robot-core {
+      position: absolute;
+      bottom: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 18px;
+      background: radial-gradient(circle, #ff6f61 0%, #d32f2f 80%);
+      border-radius: 50%;
+      box-shadow: 0 0 12px #ff5252;
+      animation: pulse 2s infinite;
+    }
+
+    .speech-bubble {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      color: #333;
+      padding: 10px 15px;
+      border-radius: 15px;
+      border: 1px solid #ccc;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+      font-size: 0.95rem;
+      white-space: nowrap;
+      display: none;
+      z-index: 10;
+    }
+
+    .robot-assistant.show-bubble .speech-bubble {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes blink {
+      0%, 97%, 100% { opacity: 1; }
+      98%, 99% { opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0% { transform: translateX(-50%) scale(1); opacity: 1; }
+      50% { transform: translateX(-50%) scale(1.2); opacity: 0.7; }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      color: #1a237e;
+      margin-bottom: 2.5rem;
+      font-size: 2.8rem;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      letter-spacing: -0.5px;
+    }
+
+    h1 i {
+      color: #27ae60;
+      margin-right: 10px;
+      animation: spin 10s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .result-summary {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: linear-gradient(145deg, #ffffff, #f5f5f5);
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .category-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .category-item:last-child {
+      border-bottom: none;
+    }
+
+    .category-label {
+      color: #1565C0;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    .category-count {
+      color: #27ae60;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .no-results {
+      text-align: center;
+      color: #777;
+      font-style: italic;
+      padding: 1.5rem;
+    }
+
+    .back-button {
+      display: inline-block;
+      text-align: center;
+      margin-top: 2rem;
+      color: #27ae60;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 12px 24px;
+      border: 2px solid #27ae60;
+      border-radius: 30px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: transparent;
+    }
+
+    .back-button:hover {
+      background: linear-gradient(45deg, #27ae60, #1976D2);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+      border-color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 🤖 Robot Assistant -->
+    <div class="robot-assistant" id="robot">
+      <div class="speech-bubble">I have sorted all the waste!</div>
+      <div class="robot-body">
+        <div class="robot-eyes">
+          <span class="eye"></span>
+          <span class="eye"></span>
+        </div>
+        <div class="robot-core"></div>
+      </div>
+    </div>
+
+    <h1><i class="fas fa-recycle"></i> Sorting Results</h1>
+    <p style="text-align: center; color: #555; font-size: 1.2rem;">
+      Here's how your waste was categorized.
+    </p>
+
+    <div class="result-summary">
+      {% if waste_counts %}
+        {% for category, count in waste_counts.items() %}
+          <div class="category-item">
+            <span class="category-label">
+              {% if category == 'recyclable' %}
+                🔄 Recyclable Waste
+              {% elif category == 'non-recyclable' %}
+                🗑️ Non-Recyclable Waste
+              {% elif category == 'organic' %}
+                🌱 Organic Waste
+              {% else %}
+                {{ category }}
+              {% endif %}
+            </span>
+            <span class="category-count">{{ count }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="no-results">No waste detected. Please upload an image to classify!</p>
+      {% endif %}
+    </div>
+
+    <a href="{{ url_for('home') }}" class="back-button" aria-label="Return to the home page to sort another image">
+      <i class="fas fa-redo-alt"></i> Sort Another Image
+    </a>
+
+  </div>
+
+  <!-- Script for interaction -->
+  <script>
+    const robot = document.getElementById('robot');
+
+    robot.addEventListener('mouseenter', () => {
+      robot.classList.add('show-bubble');
+    });
+
+    robot.addEventListener('mouseleave', () => {
+      robot.classList.remove('show-bubble');
+    });
+
+    robot.addEventListener('click', () => {
+      robot.classList.add('show-bubble');
+      setTimeout(() => {
+        robot.classList.remove('show-bubble');
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Classification</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 60%;
+            max-width: 1200px; /* Increased max-width */
+            margin: 60px auto; /* Center the container */
+            animation: fadeIn 1s ease;
+            position: relative;
+            z-index: 10;
+            display: flex;          /* Enable flex layout */
+            flex-direction: column;   /* Stack children vertically */
+            align-items: center;      /* Center children horizontally */
+            justify-content: center; /* Distribute space evenly */
+            margin-top: 120px;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: scale(0.95);}
+            to {opacity: 1; transform: scale(1);}
+        }
+
+        h1 {
+            color: #27ae60;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        h1 i {
+            color: #27ae60;
+            margin-right: 10px;
+            animation: spin 10s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        form {
+            margin-top: 25px;
+            width: 100%;           /* Make form wider */
+            max-width: 600px;     /* Ensure it doesn't get too large */
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .input-group {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .custom-file-input {
+            display: none;
+        }
+
+        .custom-label {
+            display: inline-block;
+            background-color: #f1f1f1;
+            padding: 12px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            border: 2px dashed #ccc;
+            transition: 0.3s;
+            font-size: 1em;
+        }
+
+        .custom-label:hover {
+            border-color: #27ae60;
+            background-color: #e6f9ec;
+        }
+
+        .file-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center; /* Align buttons to the center */
+            gap: 30px; /* Space between the buttons */
+            margin-top: 30px;  /* Increase margin */
+            width: 100%;          /* Make button container wider */
+            max-width: 700px;    /* Limit width if needed */
+        }
+
+        button {
+            background-color: #fff;
+            color: black;
+            border: 2px solid #1976D2;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s; /* Smooth transition for transform and box-shadow */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            background-color: #FFE4E1;
+            transform: translateY(-3px); /* Slight lift on hover */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+        }
+
+        button i {
+            margin-right: 8px;
+            color: #1976D2;
+        }
+    </style>
+</head>
+
+<body>
+
+<canvas id="background-canvas"></canvas>
+
+<div class="container">
+    <h1><i class="fas fa-recycle"></i> Autonomous Waste Sorter </h1>
+
+    <!-- Multiple Image Upload -->
+    <form action="{{ url_for('predict') }}" method="post" enctype="multipart/form-data">
+        <h2>Upload Waste Images</h2>
+        <div class="input-group">
+            <label class="custom-label" for="multi-upload"><i class="fas fa-upload"></i> Upload Waste Files</label>
+            <input type="file" id="multi-upload" class="custom-file-input" name="files" accept=".png,.jpg,.jpeg" multiple required>
+            <div id="multi-file-info" class="file-info"></div>
+        </div>
+        <br>
+        <div class="button-container">
+            <button type="submit"><i class="fas fa-boxes"></i>Auto-Sort Waste</button>
+            <button type="button" onclick="location.href='{{ url_for('dashboard') }}'"><i class="far fa-trash-alt"></i>Sorted Items Dashboard</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Multiple file upload preview
+    document.getElementById('multi-upload').addEventListener('change', function(){
+        const fileCount = this.files.length;
+        document.getElementById('multi-file-info').innerText = fileCount ? `${fileCount} files selected.` : '';
+    });
+
+    // Background Animation
+    const canvas = document.getElementById('background-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let bins = [
+        {x: 100, y: canvas.height - 100, color: '#3498db'},
+        {x: 300, y: canvas.height - 100, color: '#e67e22'},
+        {x: 500, y: canvas.height - 100, color: '#9b59b6'}
+    ];
+
+    let items = [];
+
+    function createItem() {
+        items.push({
+            x: Math.random() * canvas.width,
+            y: -20,
+            size: 10 + Math.random() * 10,
+            speed: 1 + Math.random() * 2,
+            color: ['#27ae60', '#e74c3c', '#f1c40f'][Math.floor(Math.random() * 3)]
+        });
+    }
+
+    function drawBins() {
+        bins.forEach(bin => {
+            ctx.fillStyle = bin.color;
+            ctx.fillRect(bin.x - 30, bin.y, 60, 40);
+        });
+    }
+
+    function drawItems() {
+        items.forEach(item => {
+            ctx.beginPath();
+            ctx.fillStyle = item.color;
+            ctx.arc(item.x, item.y, item.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    function updateItems() {
+        items.forEach(item => {
+            item.y += item.speed;
+            if(item.y > canvas.height - 100){
+                // move towards nearest bin
+                let nearestBin = bins.reduce((a, b) => Math.abs(b.x - item.x) < Math.abs(a.x - item.x) ? b : a);
+                if(item.x < nearestBin.x) item.x += 1;
+                if(item.x > nearestBin.x) item.x -= 1;
+            }
+        });
+        items = items.filter(item => item.y < canvas.height);
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBins();
+        drawItems();
+        updateItems();
+        requestAnimationFrame(animate);
+    }
+
+    setInterval(createItem, 500); // create new items every half second
+    animate();
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
+
+</body>
+</html>
